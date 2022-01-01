@@ -27,7 +27,6 @@ using .Orders
     @assert issorted(binedges)
 end
 
-Base.length(a::ECDFAxisSpec) = length(a.binedges)
 findbin(a::ECDFAxisSpec, x) = findbin(a.order, a.binedges, x)
 
 findbin(as::Tuple, xs::Union{Tuple, AbstractVector}) = map((ax, x) -> findbin(ax, x), as, xs)
