@@ -1,9 +1,90 @@
+using Base: NamedTuple
 import Random
 using Test
 using LazyGrids
 using OnlineStatsBase
 using StableRNGs
+using StaticArrays
+import StatsBase
 using MultiCDFs
+
+
+@testset verbose=true "single point" begin
+    rng = StableRNG(123)
+    n = 100
+    data_t2 = tuple.(randn(rng, n), randn(rng, n))
+    data_sv2 = SVector.(data_t2)
+    data_nt2 = NamedTuple{(:a, :b)}.(data_t2)
+    data_r = getindex.(data_t2, 1)
+
+    @testset "1d" verbose=true begin
+        @testset "numbers" begin
+            ecdf = ECDF(data_r)
+            sb_ecdf = StatsBase.ecdf(data_r)
+
+            @test ecdf.(-2:0.5:2) ≈ sb_ecdf(-2:0.5:2)
+            @test ecdf.(data_r) ≈ sb_ecdf(data_r)
+            xs = randn(10)
+            @test ecdf.(xs) ≈ sb_ecdf(xs)
+            @test ecdf(-Inf) == 0
+            @test ecdf(Inf) == 1
+
+            @test_throws MethodError ecdf((0.,))
+            @test_throws MethodError ecdf(SVector(0.,))
+        end
+
+        @testset "tuples" begin
+            ecdf = ECDF(tuple.(data_r))
+            sb_ecdf = StatsBase.ecdf(data_r)
+            @test ecdf.(tuple.(-2:0.5:2)) ≈ sb_ecdf(-2:0.5:2)
+            @test_throws MethodError ecdf(0.)
+            @test_throws MethodError ecdf(SVector(0.))
+            @test_throws MethodError ecdf((a=0.,))
+        end
+
+        @testset "namedtuples" begin
+            ecdf = ECDF(NamedTuple{(:a,)}.(tuple.(data_r)))
+            sb_ecdf = StatsBase.ecdf(data_r)
+            @test ecdf.(NamedTuple{(:a,)}.(tuple.(-2:0.5:2))) ≈ sb_ecdf(-2:0.5:2)
+            @test ecdf((a=Inf,)) == 1
+            @test_throws MethodError ecdf(0.)
+            @test_throws MethodError ecdf((0.,))
+            @test_throws MethodError ecdf(SVector(0.))
+            @test_throws MethodError ecdf((b=0.,))
+        end
+
+        @testset "svectors" begin
+            ecdf = ECDF(SVector.(data_r))
+            sb_ecdf = StatsBase.ecdf(data_r)
+            @test ecdf.(SVector.(-2:0.5:2)) ≈ sb_ecdf(-2:0.5:2)
+            @test_throws MethodError ecdf(0.)
+            @test_throws MethodError ecdf((0.,))
+            @test_throws MethodError ecdf((a=0.,))
+        end
+    end
+
+    @testset "2d" verbose=true begin
+        sb_ecdf1 = StatsBase.ecdf(getindex.(data_t2, 1))
+        sb_ecdf2 = StatsBase.ecdf(getindex.(data_t2, 2))
+
+        @testset "tuples" begin
+            ecdf = ECDF(data_t2)
+            @test ecdf.(tuple.(-2:0.5:2, Inf)) ≈ sb_ecdf1(-2:0.5:2)
+            @test ecdf.(tuple.(Inf, -2:0.5:2)) ≈ sb_ecdf2(-2:0.5:2)
+            @test ecdf((-Inf, -Inf)) == ecdf((0., -Inf)) == ecdf((Inf, -Inf)) == ecdf((-Inf, 0.)) == ecdf((-Inf, Inf)) == 0
+            @test ecdf((Inf, Inf)) == 1
+        end
+
+        @testset "namedtuples" begin
+            ecdf = ECDF(data_nt2)
+            @test ecdf.(NamedTuple{(:a, :b)}.(tuple.(-2:0.5:2, Inf))) ≈ sb_ecdf1(-2:0.5:2)
+            @test ecdf.(NamedTuple{(:a, :b)}.(tuple.(Inf, -2:0.5:2))) ≈ sb_ecdf2(-2:0.5:2)
+            @test ecdf((a=-Inf, b=-Inf)) == ecdf((a=0., b=-Inf)) == ecdf((a=Inf, b=-Inf)) == ecdf((a=-Inf, b=0.)) == ecdf((a=-Inf, b=Inf)) == 0
+            @test ecdf((a=Inf, b=Inf)) == 1
+            @test_throws MethodError ecdf((a=0., c=0.))
+        end
+    end
+end
 
 @testset begin
     rng = StableRNG(123)
@@ -40,12 +121,12 @@ using MultiCDFs
 end
 
 
-import Aqua
-import CompatHelperLocal as CHL
-@testset begin
-    CHL.@check()
-    Aqua.test_ambiguities(MultiCDFs, recursive=false)
-    Aqua.test_unbound_args(MultiCDFs)
-    Aqua.test_undefined_exports(MultiCDFs)
-    Aqua.test_stale_deps(MultiCDFs)
-end
+# import Aqua
+# import CompatHelperLocal as CHL
+# @testset begin
+#     CHL.@check()
+#     Aqua.test_ambiguities(MultiCDFs, recursive=false)
+#     Aqua.test_unbound_args(MultiCDFs)
+#     Aqua.test_undefined_exports(MultiCDFs)
+#     Aqua.test_stale_deps(MultiCDFs)
+# end

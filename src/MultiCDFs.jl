@@ -1,10 +1,23 @@
 module MultiCDFs
 
-export ecdf_evaluate, Orders
+export ecdf_evaluate, Orders, ECDF
 
 using Parameters
 using LazyGrids
 using OnlineStatsBase: OnlineStat, fit!, merge
+
+
+struct ECDF{T, TD <: AbstractVector{T}}
+	data::TD
+end
+
+function (ecdf::ECDF{T})(x::T) where {T}
+	sum(y -> is_all_less(y, x), ecdf.data) / length(ecdf.data)
+end
+
+is_all_less(a::T, b::T) where {T <: Real} = a <= b
+is_all_less(a::T, b::T) where {T <: Base.AbstractVecOrTuple} = all(a .<= b)
+is_all_less(a::T, b::T) where {T <: NamedTuple} = is_all_less(values(a), values(b))
 
 
 module Orders
