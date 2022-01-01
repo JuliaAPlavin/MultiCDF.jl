@@ -2,7 +2,7 @@ import Random
 using Test
 using LazyGrids
 using OnlineStatsBase
-using MultivariateECDFs
+using MultiCDFs
 
 @testset begin
     Random.seed!(123)
@@ -43,8 +43,8 @@ import Aqua
 import CompatHelperLocal as CHL
 @testset begin
     CHL.@check()
-    Aqua.test_ambiguities(MultivariateECDFs, recursive=false)
-    Aqua.test_unbound_args(MultivariateECDFs)
-    Aqua.test_undefined_exports(MultivariateECDFs)
-    Aqua.test_stale_deps(MultivariateECDFs)
+    Aqua.test_ambiguities(MultiCDFs, recursive=false)
+    Aqua.test_unbound_args(MultiCDFs)
+    Aqua.test_undefined_exports(MultiCDFs)
+    Aqua.test_stale_deps(MultiCDFs)
 end

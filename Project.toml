@@ -1,4 +1,4 @@
-name = "MultivariateECDFs"
+name = "MultiCDFs"
 uuid = "663b7897-4180-4011-967b-e4930277ef1a"
 authors = ["Alexander Plavin <alexander@plav.in>"]
 version = "0.1.0"

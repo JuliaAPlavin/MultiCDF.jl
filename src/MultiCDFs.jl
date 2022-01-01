@@ -1,4 +1,4 @@
-module MultivariateECDFs
+module MultiCDFs
 
 export ecdf_evaluate, Orders
 
