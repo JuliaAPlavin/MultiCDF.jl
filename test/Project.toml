@@ -3,6 +3,7 @@ Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 CompatHelperLocal = "5224ae11-6099-4aaa-941d-3aab004bd678"
 LazyGrids = "8ac6120f-0cea-45a0-84ec-ecbce27b592d"
 OnlineStatsBase = "925886fa-5bf2-5e8e-b522-a9147a512338"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
