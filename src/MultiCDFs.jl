@@ -7,19 +7,6 @@ using LazyGrids
 using OnlineStatsBase: OnlineStat, fit!, merge
 
 
-struct ECDF{T, TD <: AbstractVector{T}}
-	data::TD
-end
-
-function (ecdf::ECDF{T})(x::T) where {T}
-	sum(y -> is_all_less(y, x), ecdf.data) / length(ecdf.data)
-end
-
-is_all_less(a::T, b::T) where {T <: Real} = a <= b
-is_all_less(a::T, b::T) where {T <: Base.AbstractVecOrTuple} = all(a .<= b)
-is_all_less(a::T, b::T) where {T <: NamedTuple} = is_all_less(values(a), values(b))
-
-
 module Orders
 export Order, Below, Above, NoAggBelow, NoAggAbove
 abstract type Order end
@@ -29,6 +16,30 @@ struct Below <: Order end
 struct Above <: Order end
 end
 using .Orders
+
+
+struct ECDF{T, TD <: AbstractVector{T}}
+	data::TD
+end
+
+function (ecdf::ECDF{T})(x::T) where {T}
+	sum(y -> is_all_leq(y, x), ecdf.data) / length(ecdf.data)
+end
+
+function (ecdf::ECDF{T})(x::T, orders) where {T}
+	sum(y -> is_all_leq(y, x, orders), ecdf.data) / length(ecdf.data)
+end
+
+is_all_leq(a::T, b::T) where {T <: Real} = a <= b
+is_all_leq(a::T, b::T) where {T <: Base.AbstractVecOrTuple} = all(a .<= b)
+is_all_leq(a::T, b::T) where {T <: NamedTuple} = is_all_leq(values(a), values(b))
+
+is_all_leq(a::T, b::T, ::Below) where {T <: Real} = a <= b
+is_all_leq(a::T, b::T, ::Above) where {T <: Real} = a >= b
+is_all_leq(a::T, b::T, orders::Tuple) where {T <: Tuple} = all(is_all_leq.(a, b, orders))
+is_all_leq(a::T, b::T, orders::AbstractVector) where {T <: AbstractVector} = all(is_all_leq.(a, b, orders))
+is_all_leq(a::T, b::T, orders::NamedTuple{NS}) where {NS, T <: NamedTuple{NS}} = is_all_leq(values(a), values(b), values(orders))
+
 
 @generated select(nt::NamedTuple, _::NamedTuple{Kix}) where {Kix} = :( (;$([:(nt.$k) for k in Kix]...)) )
 

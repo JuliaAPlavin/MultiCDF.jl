@@ -9,7 +9,7 @@ import StatsBase
 using MultiCDFs
 
 
-@testset verbose=true "single point" begin
+@testset "single point" verbose=true begin
     rng = StableRNG(123)
     n = 100
     data_t2 = tuple.(randn(rng, n), randn(rng, n))
@@ -18,7 +18,7 @@ using MultiCDFs
     data_r = getindex.(data_t2, 1)
 
     @testset "1d" verbose=true begin
-        @testset "numbers" begin
+        @testset "numbers" verbose=true begin
             ecdf = ECDF(data_r)
             sb_ecdf = StatsBase.ecdf(data_r)
 
@@ -31,6 +31,14 @@ using MultiCDFs
 
             @test_throws MethodError ecdf((0.,))
             @test_throws MethodError ecdf(SVector(0.,))
+            
+            @testset "orders" begin
+                @test ecdf(-Inf, Orders.Below()) == 0
+                @test ecdf(-Inf, Orders.Above()) == 1
+                @test ecdf(Inf, Orders.Below()) == 1
+                @test ecdf(Inf, Orders.Above()) == 0
+                @test ecdf(0.) == ecdf(0., Orders.Below()) == 1 - ecdf(0., Orders.Above())
+            end
         end
 
         @testset "tuples" begin
@@ -81,7 +89,19 @@ using MultiCDFs
             @test ecdf.(NamedTuple{(:a, :b)}.(tuple.(Inf, -2:0.5:2))) ≈ sb_ecdf2(-2:0.5:2)
             @test ecdf((a=-Inf, b=-Inf)) == ecdf((a=0., b=-Inf)) == ecdf((a=Inf, b=-Inf)) == ecdf((a=-Inf, b=0.)) == ecdf((a=-Inf, b=Inf)) == 0
             @test ecdf((a=Inf, b=Inf)) == 1
+            @test_throws MethodError ecdf((b=0., a=0.))
             @test_throws MethodError ecdf((a=0., c=0.))
+            
+            @testset "orders" begin
+                @test ecdf((a=-Inf, b=-Inf), (a=Orders.Below(), b=Orders.Below())) == 0
+                @test_throws MethodError ecdf((a=-Inf, b=-Inf), (b=Orders.Below(), a=Orders.Below()))
+                @test ecdf((a=-Inf, b=-Inf), (a=Orders.Above(), b=Orders.Above())) == 1
+                @test ecdf((a=-Inf, b=-Inf), (a=Orders.Above(), b=Orders.Below())) == 0
+                @test ecdf((a=0., b=0.), (a=Orders.Below(), b=Orders.Below())) +
+                        ecdf((a=0., b=0.), (a=Orders.Above(), b=Orders.Above())) +
+                        ecdf((a=0., b=0.), (a=Orders.Above(), b=Orders.Below())) +
+                        ecdf((a=0., b=0.), (a=Orders.Below(), b=Orders.Above())) == 1
+            end
         end
     end
 end
