@@ -3,6 +3,11 @@ using LazyGrids
 using MultivariateECDFs
 
 @testset begin
+    n = 100
+    data_t = tuple.(randn(n), randn(n))
+    data_nt = NamedTuple{(:a, :b)}.(data_t)
+    
+    ecdf_evaluate(data_t, grid(-1:0.2:1, -1:0.2:2))
 end
 
 

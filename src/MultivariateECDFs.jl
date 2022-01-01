@@ -1,8 +1,11 @@
 module MultivariateECDFs
 
+export ecdf_evaluate, Orders
+
 using Parameters
 using LazyGrids
-using OnlineStatsBase
+using OnlineStatsBase: OnlineStat, fit!, merge
+using AxisKeys: KeyedArray, axiskeys
 
 
 module Orders
@@ -40,7 +43,7 @@ aggregate_axis!(::Below, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, 
 aggregate_axis!(::Above, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
 
 
-function ecdf(data::AbstractVector{<:Tuple}, g::Grid; aggregate::NTuple{N, Order}=ntuple(_ -> Orders.Below(), ndims(g))) where {N}
+function ecdf_evaluate(data::AbstractVector{<:Tuple}, g::Grid; aggregate::NTuple{N, Order}=ntuple(_ -> Orders.Below(), ndims(g))) where {N}
 	@assert eltype(g) <: Tuple
 	axspecs = map(axiskeys(g), aggregate) do ax, agg
 		ECDFAxisSpec(ax, agg)
@@ -57,7 +60,7 @@ function ecdf(data::AbstractVector{<:Tuple}, g::Grid; aggregate::NTuple{N, Order
 	return counts
 end
 
-function ecdf(data::AbstractVector{<:NamedTuple}, g::Grid; aggregate::NamedTuple=(;))
+function ecdf_evaluate(data::AbstractVector{<:NamedTuple}, g::Grid; aggregate::NamedTuple=(;))
 	@assert eltype(g) <: NamedTuple
 	aggregate_ = merge(map(_ -> Orders.Below(), named_axiskeys(g)), aggregate)
 	axspecs = map(named_axiskeys(g), aggregate_) do ax, agg
@@ -75,7 +78,7 @@ function ecdf(data::AbstractVector{<:NamedTuple}, g::Grid; aggregate::NamedTuple
 	return counts
 end
 
-function ecdf(stat::OnlineStat, data::AbstractVector{<:NamedTuple}, g::Grid; aggregate::NamedTuple=(;))
+function ecdf_evaluate(stat::OnlineStat, data::AbstractVector{<:NamedTuple}, g::Grid; aggregate::NamedTuple=(;))
 	@assert eltype(g) <: NamedTuple
 	aggregate_ = merge(map(_ -> Orders.Below(), named_axiskeys(g)), aggregate)
 	axspecs = map(named_axiskeys(g), aggregate_) do ax, agg
