@@ -5,7 +5,6 @@ export ecdf_evaluate, Orders
 using Parameters
 using LazyGrids
 using OnlineStatsBase: OnlineStat, fit!, merge
-using AxisKeys: KeyedArray, axiskeys
 
 
 module Orders
