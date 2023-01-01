@@ -131,11 +131,6 @@ ecdf_nt((;), count)
 # ╔═╡ dc915af1-076f-4cb7-be2e-785988e3202b
 ecdf(NamedTuple{(:a,)}[])((a=1,), count)
 
-# ╔═╡ b333da13-1ecd-4649-bd79-acc8ff760283
-map((3, 4), SVector(1, 2)) do x, y
-	(x, y)
-end
-
 # ╔═╡ bad35ee4-4142-4d27-b2c9-e9490d807cfc
 md"""
 This only works for `NamedTuple`s, not regular `Tuple`s.
@@ -395,6 +390,7 @@ Altair = "b5d8985d-ff0a-46fa-83e6-c6893fdbcf16"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataPipes = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
 DisplayAs = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
+MultiCDF = "663b7897-4180-4011-967b-e4930277ef1a"
 OnlineStatsBase = "925886fa-5bf2-5e8e-b522-a9147a512338"
 RectiGrids = "8ac6971d-971d-971d-971d-971d5ab1a71a"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
@@ -405,6 +401,7 @@ Altair = "~0.1.1"
 BenchmarkTools = "~1.2.2"
 DataPipes = "~0.2.4"
 DisplayAs = "~0.1.2"
+MultiCDF = "~0.1.0"
 OnlineStatsBase = "~1.4.9"
 RectiGrids = "~0.1.6"
 Revise = "~3.3.1"
@@ -769,6 +766,12 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
+[[deps.MultiCDF]]
+deps = ["AxisKeys", "OnlineStatsBase", "RectiGrids"]
+git-tree-sha1 = "838a03239c5b09f0e027c365777173285abbba79"
+uuid = "663b7897-4180-4011-967b-e4930277ef1a"
+version = "0.1.0"
+
 [[deps.NamedDims]]
 deps = ["AbstractFFTs", "ChainRulesCore", "CovarianceEstimation", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
 git-tree-sha1 = "88dce79529a358f6efd13225d131bec958a18f1d"
@@ -1045,7 +1048,6 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═80356436-1fd2-4941-a0b1-9144d0b4519a
 # ╠═384acb45-b4cb-4323-b837-f27ad3ca834c
 # ╠═dc915af1-076f-4cb7-be2e-785988e3202b
-# ╠═b333da13-1ecd-4649-bd79-acc8ff760283
 # ╟─bad35ee4-4142-4d27-b2c9-e9490d807cfc
 # ╟─c467316a-f248-4968-be51-c3b932c05af6
 # ╟─0239e2b1-c070-460c-ba3e-9bd8e7854a83
