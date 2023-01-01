@@ -1,46 +1,41 @@
 module MultiCDFs
 
-export ecdf_evaluate, Orders, ECDF
+export ecdf
 
-using Parameters
 using RectiGrids
 using OnlineStatsBase: OnlineStat, fit!, merge, value
 using AxisKeys: hasnames
 
 
-module Orders
-export Order, Below, Above, NoAggBelow, NoAggAbove
-abstract type Order end
-struct NoAggBelow <: Order end
-struct NoAggAbove <: Order end
-struct Below <: Order end
-struct Above <: Order end
-end
-using .Orders
-
-
-struct ECDF{T, TD <: AbstractVector{T}}
+struct ECDF{T, TD <: AbstractVector{T}, TS}
 	data::TD
+	signs::TS
 end
+
+default_signs(::Type{<:NamedTuple{NS}}) where {NS} = NamedTuple{NS}(ntuple(_ -> <=, length(NS)))
+default_signs(::Type{T}) where {T <: Tuple} = ntuple(_ -> <=, fieldcount(T))
+
+ecdf(data; signs=default_signs(eltype(data))) = ECDF(data, signs)
 
 function (ecdf::ECDF)(x)
-	sum(y -> is_all_leq(y, x), ecdf.data) / length(ecdf.data)
+	sum(y -> is_all_leq(ecdf.signs, y, x), ecdf.data) / length(ecdf.data)
 end
 
 function (ecdf::ECDF)(x, ::typeof(count))
-	sum(y -> is_all_leq(y, x), ecdf.data)
+	sum(y -> is_all_leq(ecdf.signs, y, x), ecdf.data)
 end
 
 function (ecdf::ECDF)(x, stat::OnlineStat)
-	fit!(copy(stat), filter(y -> is_all_leq(y, x), ecdf.data))
+	fit!(copy(stat), filter(y -> is_all_leq(ecdf.signs, y, x), ecdf.data))
 end
 
 Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid) = ecdf.(g, count) ./ length(ecdf.data)
 
 function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, ::typeof(count))
-	# aggregate_ = merge(map(_ -> Orders.Below(), named_axiskeys(g)), aggregate)
-	axspecs = map(hasnames(g) ? named_axiskeys(g) : axiskeys(g)) do ax
-		ECDFAxisSpec(ax, Orders.Below())
+	axkeys = hasnames(g) ? named_axiskeys(g) : axiskeys(g)
+	axspecs = map(axkeys, select_if_possible(ecdf.signs, axkeys)) do ax, sign
+		@assert issorted(ax)
+		ECDFAxisSpec(ax, sign)
 	end
 	counts = map(_ -> 0, g)
 	for r in ecdf.data
@@ -49,14 +44,16 @@ function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, ::typeof(count))
 		counts[ix] += 1
 	end
 	for (dim, ax) in enumerate(axspecs)
-		aggregate_axis!(ax.order, counts, dim)
+		aggregate_axis!(ax.sign, counts, dim)
 	end
 	return counts
 end
 
 function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, stat::OnlineStat)
-	axspecs = map(hasnames(g) ? named_axiskeys(g) : axiskeys(g)) do ax
-		ECDFAxisSpec(ax, Orders.Below())
+	axkeys = hasnames(g) ? named_axiskeys(g) : axiskeys(g)
+	axspecs = map(axkeys, select_if_possible(ecdf.signs, axkeys)) do ax, sign
+		@assert issorted(ax)
+		ECDFAxisSpec(ax, sign)
 	end
 	result = map(_ -> copy(stat), g)
 	for r in ecdf.data
@@ -65,44 +62,40 @@ function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, stat::OnlineStat)
 		fit!(result[ix], r)
 	end
 	for (dim, ax) in enumerate(axspecs)
-		aggregate_axis!(ax.order, result, dim)
+		aggregate_axis!(ax.sign, result, dim)
 	end
 	return result
 end
 
 # like Base.AbstractVecOrTuple, but includes heterogeneous tuples
 const AbstractVecOrTuple = Union{AbstractVector, Tuple}
-is_all_leq(datap::Real, query::Real) = datap <= query
-is_all_leq(datap::Real, query::Base.Fix2) = query(datap)
-is_all_leq(datap::AbstractVecOrTuple, query::AbstractVecOrTuple) = (@assert length(datap) == length(query); all(is_all_leq.(datap, query)))
-is_all_leq(datap::NamedTuple{NSD}, query::NamedTuple{NSQ}) where {NSD, NSQ} = is_all_leq(values(datap[NSQ]), values(query))
 
-# is_all_leq(a::T, b::T, ::Below) where {T <: Real} = a <= b
-# is_all_leq(a::T, b::T, ::Above) where {T <: Real} = a >= b
-# is_all_leq(a::T, b::T, orders::Tuple) where {T <: Tuple} = all(is_all_leq.(a, b, orders))
-# is_all_leq(a::T, b::T, orders::AbstractVector) where {T <: AbstractVector} = all(is_all_leq.(a, b, orders))
-# is_all_leq(a::T, b::T, orders::NamedTuple{NS}) where {NS, T <: NamedTuple{NS}} = is_all_leq(values(a), values(b), values(orders))
+@inline is_all_leq(sign, datap::Real, query::Real) = sign(datap, query)
+@inline is_all_leq(sign, datap::Real, query::Base.Fix2) = query(datap)  # ignore `sign`
+@inline is_all_leq(signs, datap, query) = all(map(is_all_leq, select_if_possible(signs, query), select_if_possible(datap, query), query))
 
+# can specify a subset of fields for namedtuples...
+select_if_possible(data::NamedTuple, query::NamedTuple{NSQ}) where {NSQ} = data[NSQ]
+# but not for regular tuples
+select_if_possible(data::AbstractVecOrTuple, query::AbstractVecOrTuple) = (@assert length(data) == length(query); data)
 
-@with_kw struct ECDFAxisSpec{TV, TO}
+struct ECDFAxisSpec{TV, TO}
     binedges::TV
-    order::TO
-    
-    @assert issorted(binedges)
+    sign::TO
 end
 
-@inline findbin(a::ECDFAxisSpec, x) = findbin(a.order, a.binedges, x)
+@inline findbin(a::ECDFAxisSpec, x) = findbin(a.sign, a.binedges, x)
 
 @inline findbin(as::Tuple, xs::Union{Tuple, AbstractVector}) = map((ax, x) -> findbin(ax, x), as, xs)
 @inline findbin(as::NamedTuple{NS}, xs::NamedTuple) where {NS} = map((ax, x) -> findbin(ax, x), as, xs[NS]) |> values
 
-@inline findbin(::Union{Below, NoAggBelow}, binedges::AbstractVector, x) = searchsortedfirst(binedges, x)
-@inline findbin(::Union{Above, NoAggAbove}, binedges::AbstractVector, x) = searchsortedlast(binedges, x)
+@inline findbin(::typeof(<=), binedges::AbstractVector, x) = searchsortedfirst(binedges, x)
+@inline findbin(::typeof(>=), binedges::AbstractVector, x) = searchsortedlast(binedges, x)
 
-aggregate_axis!(::Union{NoAggBelow, NoAggAbove}, A::AbstractArray, dim::Int) = A
-aggregate_axis!(::Below, A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
-aggregate_axis!(::Below, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
-aggregate_axis!(::Above, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
+# aggregate_axis!(::Union{NoAggBelow, NoAggAbove}, A::AbstractArray, dim::Int) = A
+aggregate_axis!(::typeof(<=), A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
+aggregate_axis!(::typeof(<=), A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
+aggregate_axis!(::typeof(>=), A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
 
 
 end
