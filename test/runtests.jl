@@ -1,7 +1,7 @@
 using Base: NamedTuple
 import Random
 using Test
-using LazyGrids
+using RectiGrids
 using OnlineStatsBase
 using StableRNGs
 using StaticArrays
@@ -9,7 +9,7 @@ import StatsBase
 using MultiCDFs
 
 
-@testset "single point" verbose=true begin
+@testset "single point" begin
     rng = StableRNG(123)
     n = 100
     data_t2 = tuple.(randn(rng, n), randn(rng, n))
@@ -17,8 +17,8 @@ using MultiCDFs
     data_nt2 = NamedTuple{(:a, :b)}.(data_t2)
     data_r = getindex.(data_t2, 1)
 
-    @testset "1d" verbose=true begin
-        @testset "numbers" verbose=true begin
+    @testset "1d" begin
+        @testset "numbers" begin
             ecdf = ECDF(data_r)
             sb_ecdf = StatsBase.ecdf(data_r)
 
@@ -71,7 +71,7 @@ using MultiCDFs
         end
     end
 
-    @testset "2d" verbose=true begin
+    @testset "2d" begin
         sb_ecdf1 = StatsBase.ecdf(getindex.(data_t2, 1))
         sb_ecdf2 = StatsBase.ecdf(getindex.(data_t2, 2))
 
@@ -106,7 +106,7 @@ using MultiCDFs
     end
 end
 
-@testset begin
+@testset "grid" begin
     rng = StableRNG(123)
     n = 100
     data_t = tuple.(randn(rng, n), randn(rng, n))
@@ -141,12 +141,12 @@ end
 end
 
 
-# import Aqua
-# import CompatHelperLocal as CHL
-# @testset begin
-#     CHL.@check()
-#     Aqua.test_ambiguities(MultiCDFs, recursive=false)
-#     Aqua.test_unbound_args(MultiCDFs)
-#     Aqua.test_undefined_exports(MultiCDFs)
-#     Aqua.test_stale_deps(MultiCDFs)
-# end
+import Aqua
+import CompatHelperLocal as CHL
+@testset begin
+    CHL.@check()
+    Aqua.test_ambiguities(MultiCDFs, recursive=false)
+    Aqua.test_unbound_args(MultiCDFs)
+    Aqua.test_undefined_exports(MultiCDFs)
+    Aqua.test_stale_deps(MultiCDFs)
+end
