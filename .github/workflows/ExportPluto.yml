@@ -35,7 +35,12 @@ jobs:
                   Pkg.activate(mktempdir())
                   Pkg.add([
                     Pkg.PackageSpec(name="PlutoSliderServer", version="0.3.2-0.3"),
+                    Pkg.PackageSpec(name="MsgPack"),
                   ])
+
+                  import MsgPack
+                  MsgPack.msgpack_type(::Type{<:Ptr}) = MsgPack.IntegerType()
+                  MsgPack.to_msgpack(::MsgPack.IntegerType, x::Ptr) = 0
 
                   import PlutoSliderServer
 
