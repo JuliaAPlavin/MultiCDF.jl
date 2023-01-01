@@ -1,21 +1,23 @@
 module MultiCDF
 
-export ecdf
+export ecdf, ecdf_from_pdf, from_unit_cube
 
 using RectiGrids
 using OnlineStatsBase: OnlineStat, fit!, merge, value
+using AxisKeys
 using AxisKeys: hasnames
+
+
+default_signs(::Type{<:NamedTuple{NS}}) where {NS} = NamedTuple{NS}(ntuple(_ -> <=, length(NS)))
+default_signs(::Type{T}) where {T <: Tuple} = ntuple(_ -> <=, fieldcount(T))
+default_signs(::Type{T}) where {T <: AbstractVector} = ntuple(_ -> <=, length(T))  # length(T) only works for StaticArrays, that's fine
+default_signs(::Type{<:Real}) = <=
 
 
 struct ECDF{T, TD <: AbstractVector{T}, TS}
 	data::TD
 	signs::TS
 end
-
-default_signs(::Type{<:NamedTuple{NS}}) where {NS} = NamedTuple{NS}(ntuple(_ -> <=, length(NS)))
-default_signs(::Type{T}) where {T <: Tuple} = ntuple(_ -> <=, fieldcount(T))
-default_signs(::Type{T}) where {T <: AbstractVector} = ntuple(_ -> <=, length(T))  # length(T) only works for StaticArrays, that's fine
-default_signs(::Type{<:Real}) = <=
 
 ecdf(data; signs=default_signs(eltype(data))) = ECDF(data, signs)
 
@@ -67,6 +69,39 @@ function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, stat::OnlineStat)
 		aggregate_axis!(ax.sign, result, dim)
 	end
 	return result
+end
+
+struct ECDF_PDF{TD, TS}
+	data::TD
+	signs::TS
+end
+
+Base.broadcastable(x::ECDF_PDF) = Ref(x)
+ecdf_from_pdf(data::KeyedArray{T, 2}) where {T} = ECDF_PDF((cumsum(data; dims=2), cumsum(sum(data; dims=2)[:, 1])), nothing)
+
+from_unit_cube(df::ECDF_PDF, x::Tuple) = from_unit_cube_(df.data, x)
+from_unit_cube(df::ECDF_PDF, x::T) where {T} = T(from_unit_cube_(df.data, x))
+
+@inline function from_unit_cube_(cum_margins::KeyedArray{T, 1}, x) where {T}
+	ix, val = axkey_interp(cum_margins, x[1] * cum_margins[end])
+	(val,)
+end
+@inline function from_unit_cube_((data, cum_margins)::Tuple, x)
+	ix, val = axkey_interp(cum_margins, x[1] * cum_margins[end])
+	(val, from_unit_cube_(view(data, ix, :), x[2:end])...)
+end
+
+@inline function axkey_interp(A::KeyedArray{T, 1}, x) where {T}
+	ix = x == A[end] ?
+		searchsortedfirst(A, x) :
+		searchsortedlast(A, x) + 1
+	curkey = axiskeys(A, 1)[ix]
+	prevA = ix == 1 ? zero(eltype(A)) : A[ix - 1]
+	prevkey = ix == 1 ? curkey - (axiskeys(A, 1)[ix + 1] - curkey) : axiskeys(A, 1)[ix - 1]
+	t = (x - prevA) / (A[ix] - prevA)
+	# t = isfinite(t) ? t : one(t)
+	val = t * curkey + (1 - t) * prevkey
+	return ix, val
 end
 
 # like Base.AbstractVecOrTuple, but includes heterogeneous tuples
