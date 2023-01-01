@@ -7,9 +7,9 @@ using InteractiveUtils
 # ╔═╡ 5d7ddd57-2b80-430e-8b1a-a6dc72ae31b9
 begin
 	using Revise
-	import Pkg
-	eval(:(Pkg.develop(path="..")))
-	using MultiCDFs
+	# import Pkg
+	# eval(:(Pkg.develop(path="..")))
+	using MultiCDF
 end
 
 # ╔═╡ c1c7165e-9f29-4d6b-b8e0-125dbb8cfbd6
@@ -32,15 +32,6 @@ using DataPipes
 
 # ╔═╡ 65ee6e67-3de2-4ad1-8bf2-775f75e29312
 using Accessors
-
-# ╔═╡ 687de02f-282e-43d0-88d3-8c367ff0d238
-using StaticArrays
-
-# ╔═╡ d3df623c-0c0a-4b18-869a-08d8ff0503ab
-begin
-	using PlutoMy
-	PlutoMy.style_tag()
-end
 
 # ╔═╡ 1e5164c2-e967-4a25-84e6-66f6436fe794
 md"""
@@ -84,12 +75,6 @@ The `ECDF.signs` field stores comparison signs for generalized CDFs. See below f
 
 # ╔═╡ da68a0f4-997e-4a05-8107-872ba3369f54
 ecdf_nt.signs
-
-# ╔═╡ b1e137c0-affc-462a-a522-8b54994c930d
-
-
-# ╔═╡ ecee51b2-ac3d-42c8-8701-71e4f8340631
-PlutoMy.@code_warntype ecdf(data_t2)
 
 # ╔═╡ a0d27d5a-6f9f-46c8-966c-e3eaf713e081
 md"""
@@ -410,13 +395,9 @@ Altair = "b5d8985d-ff0a-46fa-83e6-c6893fdbcf16"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataPipes = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
 DisplayAs = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
-MultiCDFs = "663b7897-4180-4011-967b-e4930277ef1a"
 OnlineStatsBase = "925886fa-5bf2-5e8e-b522-a9147a512338"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-PlutoMy = "13de7d54-404c-4927-b51c-7903105debb2"
 RectiGrids = "8ac6971d-971d-971d-971d-971d5ab1a71a"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
-StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 Accessors = "~0.1.7"
@@ -424,12 +405,9 @@ Altair = "~0.1.1"
 BenchmarkTools = "~1.2.2"
 DataPipes = "~0.2.4"
 DisplayAs = "~0.1.2"
-MultiCDFs = "~0.1.0"
 OnlineStatsBase = "~1.4.9"
-PlutoMy = "~0.1.9"
 RectiGrids = "~0.1.6"
 Revise = "~3.3.1"
-StaticArrays = "~1.3.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -438,11 +416,6 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.7.1"
 manifest_format = "2.0"
-
-[[deps.ANSIColoredPrinters]]
-git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
-uuid = "a4c015fc-c6ff-483c-b24f-f7ea428134e9"
-version = "0.0.1"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -796,12 +769,6 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
-[[deps.MultiCDFs]]
-deps = ["AxisKeys", "OnlineStatsBase", "RectiGrids"]
-path = "../../home/aplavin/.julia/dev/MultiCDFs.jl"
-uuid = "663b7897-4180-4011-967b-e4930277ef1a"
-version = "0.1.0"
-
 [[deps.NamedDims]]
 deps = ["AbstractFFTs", "ChainRulesCore", "CovarianceEstimation", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
 git-tree-sha1 = "88dce79529a358f6efd13225d131bec958a18f1d"
@@ -853,12 +820,6 @@ version = "2.1.3"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-
-[[deps.PlutoMy]]
-deps = ["ANSIColoredPrinters", "Base64", "BenchmarkTools", "InteractiveUtils", "Markdown", "Suppressor"]
-git-tree-sha1 = "cdc0c2863f07665b00dee83b57b9b90c9ee4447b"
-uuid = "13de7d54-404c-4927-b51c-7903105debb2"
-version = "0.1.9"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -946,12 +907,6 @@ git-tree-sha1 = "7f5a513baec6f122401abfc8e9c074fdac54f6c1"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 version = "0.4.1"
 
-[[deps.StaticArrays]]
-deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "de9e88179b584ba9cf3cc5edbb7a41f26ce42cda"
-uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.3.0"
-
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
@@ -966,11 +921,6 @@ deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missin
 git-tree-sha1 = "51383f2d367eb3b444c961d485c565e4c0cf4ba0"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.33.14"
-
-[[deps.Suppressor]]
-git-tree-sha1 = "a819d77f31f83e5792a76081eee1ea6342ab8787"
-uuid = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
-version = "0.2.0"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1080,10 +1030,6 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═3f00bb9a-49e4-4b04-8177-d51931bc8e7f
 # ╟─465f4319-6f7f-4d56-b8cf-df7aceffc956
 # ╠═da68a0f4-997e-4a05-8107-872ba3369f54
-# ╠═687de02f-282e-43d0-88d3-8c367ff0d238
-# ╠═b1e137c0-affc-462a-a522-8b54994c930d
-# ╠═d3df623c-0c0a-4b18-869a-08d8ff0503ab
-# ╠═ecee51b2-ac3d-42c8-8701-71e4f8340631
 # ╟─a0d27d5a-6f9f-46c8-966c-e3eaf713e081
 # ╟─d08d78bd-a645-42e7-b909-f9ae9f81f5e4
 # ╠═041364da-9656-4312-bad6-4b62315a386a

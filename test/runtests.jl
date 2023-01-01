@@ -7,7 +7,7 @@ using StableRNGs
 using StaticArrays
 import StatsBase
 using Accessors
-using MultiCDFs
+using MultiCDF
 
 
 @testset "empty" begin
@@ -115,8 +115,8 @@ import Aqua
 import CompatHelperLocal as CHL
 @testset begin
     CHL.@check()
-    Aqua.test_ambiguities(MultiCDFs, recursive=false)
-    Aqua.test_unbound_args(MultiCDFs)
-    Aqua.test_undefined_exports(MultiCDFs)
-    Aqua.test_stale_deps(MultiCDFs)
+    Aqua.test_ambiguities(MultiCDF, recursive=false)
+    Aqua.test_unbound_args(MultiCDF)
+    Aqua.test_undefined_exports(MultiCDF)
+    Aqua.test_stale_deps(MultiCDF)
 end
