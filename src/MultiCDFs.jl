@@ -20,11 +20,11 @@ default_signs(::Type{<:Real}) = <=
 ecdf(data; signs=default_signs(eltype(data))) = ECDF(data, signs)
 
 function (ecdf::ECDF)(x)
-	sum(y -> is_all_leq(ecdf.signs, y, x), ecdf.data) / length(ecdf.data)
+	count(y -> is_all_leq(ecdf.signs, y, x), ecdf.data) / length(ecdf.data)
 end
 
 function (ecdf::ECDF)(x, ::typeof(count))
-	sum(y -> is_all_leq(ecdf.signs, y, x), ecdf.data)
+	count(y -> is_all_leq(ecdf.signs, y, x), ecdf.data)
 end
 
 function (ecdf::ECDF)(x, stat::OnlineStat)
