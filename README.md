@@ -9,4 +9,4 @@ Main features of `MultiCDF.jl`:
 - Can calculate marginal ECDFs taking a subset of parameters into account;
 - Computes generalized ECDFs: arbitrary signs (`<=` / `>=` / `<` / `>`), arbitrary `OnlineStats` statistics instead of simple counting.
 
-See a [Pluto notebook](https://aplavin.github.io/MultiCDFs.jl/test/examples.html) for examples and benchmarks.
+See a [Pluto notebook](https://aplavin.github.io/MultiCDF.jl/test/examples.html) for examples and benchmarks.
