@@ -94,11 +94,24 @@ end
 
 @inline findbin(::typeof(<=), binedges::AbstractVector, x) = searchsortedfirst(binedges, x)
 @inline findbin(::typeof(>=), binedges::AbstractVector, x) = searchsortedlast(binedges, x)
+@inline findbin(::typeof(<), binedges::AbstractVector, x) = let
+	ix = searchsortedfirst(binedges, x)
+	ix <= lastindex(binedges) && binedges[ix] == x ?
+		ix + 1 :
+		ix
+end
+@inline findbin(::typeof(>), binedges::AbstractVector, x) = let
+	ix = searchsortedlast(binedges, x)
+	ix >= firstindex(binedges) && binedges[ix] == x ?
+		ix - 1 :
+		ix
+end
 
-# aggregate_axis!(::Union{NoAggBelow, NoAggAbove}, A::AbstractArray, dim::Int) = A
-aggregate_axis!(::typeof(<=), A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
-aggregate_axis!(::typeof(<=), A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
-aggregate_axis!(::typeof(>=), A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
+const LT = Union{typeof(<=), typeof(<)}
+const GT = Union{typeof(>=), typeof(>)}
+aggregate_axis!(::LT, A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
+aggregate_axis!(::LT, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
+aggregate_axis!(::GT, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
 
 
 end
