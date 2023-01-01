@@ -1,4 +1,4 @@
-module MultiCDFs
+module MultiCDF
 
 export ecdf
 
