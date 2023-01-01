@@ -7,8 +7,8 @@ using InteractiveUtils
 # ╔═╡ 5d7ddd57-2b80-430e-8b1a-a6dc72ae31b9
 begin
 	using Revise
-	import Pkg
-	eval(:(Pkg.develop(path="..")))
+	# import Pkg
+	# eval(:(Pkg.develop(path="..")))
 	using MultiCDF
 end
 
@@ -396,7 +396,6 @@ BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataPipes = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
 DisplayAs = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
 OnlineStatsBase = "925886fa-5bf2-5e8e-b522-a9147a512338"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 RectiGrids = "8ac6971d-971d-971d-971d-971d5ab1a71a"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
