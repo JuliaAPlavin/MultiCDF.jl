@@ -4,7 +4,8 @@ export ecdf_evaluate, Orders, ECDF
 
 using Parameters
 using RectiGrids
-using OnlineStatsBase: OnlineStat, fit!, merge
+using OnlineStatsBase: OnlineStat, fit!, merge, value
+using AxisKeys: hasnames
 
 
 module Orders
@@ -22,56 +23,27 @@ struct ECDF{T, TD <: AbstractVector{T}}
 	data::TD
 end
 
-function (ecdf::ECDF{T})(x::T) where {T}
+function (ecdf::ECDF)(x)
 	sum(y -> is_all_leq(y, x), ecdf.data) / length(ecdf.data)
 end
 
-function (ecdf::ECDF{T})(x::T, orders) where {T}
-	sum(y -> is_all_leq(y, x, orders), ecdf.data) / length(ecdf.data)
+function (ecdf::ECDF)(x, ::typeof(count))
+	sum(y -> is_all_leq(y, x), ecdf.data)
 end
 
-is_all_leq(a::T, b::T) where {T <: Real} = a <= b
-is_all_leq(a::T, b::T) where {T <: Base.AbstractVecOrTuple} = all(a .<= b)
-is_all_leq(a::T, b::T) where {T <: NamedTuple} = is_all_leq(values(a), values(b))
-
-is_all_leq(a::T, b::T, ::Below) where {T <: Real} = a <= b
-is_all_leq(a::T, b::T, ::Above) where {T <: Real} = a >= b
-is_all_leq(a::T, b::T, orders::Tuple) where {T <: Tuple} = all(is_all_leq.(a, b, orders))
-is_all_leq(a::T, b::T, orders::AbstractVector) where {T <: AbstractVector} = all(is_all_leq.(a, b, orders))
-is_all_leq(a::T, b::T, orders::NamedTuple{NS}) where {NS, T <: NamedTuple{NS}} = is_all_leq(values(a), values(b), values(orders))
-
-
-@generated select(nt::NamedTuple, _::NamedTuple{Kix}) where {Kix} = :( (;$([:(nt.$k) for k in Kix]...)) )
-
-
-@with_kw struct ECDFAxisSpec{TV}
-    binedges::TV
-    order::Order
-    
-    @assert issorted(binedges)
+function (ecdf::ECDF)(x, stat::OnlineStat)
+	fit!(copy(stat), filter(y -> is_all_leq(y, x), ecdf.data))
 end
 
-findbin(a::ECDFAxisSpec, x) = findbin(a.order, a.binedges, x)
+Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid) = ecdf.(g, count) ./ length(ecdf.data)
 
-findbin(as::Tuple, xs::Union{Tuple, AbstractVector}) = map((ax, x) -> findbin(ax, x), as, xs)
-findbin(as::NamedTuple, xs::NamedTuple) = map((ax, x) -> findbin(ax, x), as, select(xs, as)) |> values
-
-findbin(::Union{Below, NoAggBelow}, binedges::AbstractVector, x) = searchsortedfirst(binedges, x)
-findbin(::Union{Above, NoAggAbove}, binedges::AbstractVector, x) = searchsortedlast(binedges, x)
-
-aggregate_axis!(::Union{NoAggBelow, NoAggAbove}, A::AbstractArray, dim::Int) = A
-aggregate_axis!(::Below, A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
-aggregate_axis!(::Below, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
-aggregate_axis!(::Above, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
-
-
-function ecdf_evaluate(data::AbstractVector{<:Tuple}, g::RectiGrid; aggregate::NTuple{N, Order}=ntuple(_ -> Orders.Below(), ndims(g))) where {N}
-	@assert eltype(g) <: Tuple
-	axspecs = map(axiskeys(g), aggregate) do ax, agg
-		ECDFAxisSpec(ax, agg)
+function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, ::typeof(count))
+	# aggregate_ = merge(map(_ -> Orders.Below(), named_axiskeys(g)), aggregate)
+	axspecs = map(hasnames(g) ? named_axiskeys(g) : axiskeys(g)) do ax
+		ECDFAxisSpec(ax, Orders.Below())
 	end
-	counts = map(_ -> 0, KeyedArray(g))
-	for r in data
+	counts = map(_ -> 0, g)
+	for r in ecdf.data
 		ix = findbin(axspecs, r) |> CartesianIndex
 		checkbounds(Bool, counts, ix) || continue
 		counts[ix] += 1
@@ -82,32 +54,12 @@ function ecdf_evaluate(data::AbstractVector{<:Tuple}, g::RectiGrid; aggregate::N
 	return counts
 end
 
-function ecdf_evaluate(data::AbstractVector{<:NamedTuple}, g::RectiGrid; aggregate::NamedTuple=(;))
-	@assert eltype(g) <: NamedTuple
-	aggregate_ = merge(map(_ -> Orders.Below(), named_axiskeys(g)), aggregate)
-	axspecs = map(named_axiskeys(g), aggregate_) do ax, agg
-		ECDFAxisSpec(ax, agg)
+function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, stat::OnlineStat)
+	axspecs = map(hasnames(g) ? named_axiskeys(g) : axiskeys(g)) do ax
+		ECDFAxisSpec(ax, Orders.Below())
 	end
-	counts = map(_ -> 0, KeyedArray(g))
-	for r in data
-		ix = findbin(axspecs, r) |> CartesianIndex
-		checkbounds(Bool, counts, ix) || continue
-		counts[ix] += 1
-	end
-	for (dim, ax) in enumerate(axspecs)
-		aggregate_axis!(ax.order, counts, dim)
-	end
-	return counts
-end
-
-function ecdf_evaluate(stat::OnlineStat, data::AbstractVector{<:NamedTuple}, g::RectiGrid; aggregate::NamedTuple=(;))
-	@assert eltype(g) <: NamedTuple
-	aggregate_ = merge(map(_ -> Orders.Below(), named_axiskeys(g)), aggregate)
-	axspecs = map(named_axiskeys(g), aggregate_) do ax, agg
-		ECDFAxisSpec(ax, agg)
-	end
-	result = map(_ -> copy(stat), KeyedArray(g))
-	for r in data
+	result = map(_ -> copy(stat), g)
+	for r in ecdf.data
 		ix = findbin(axspecs, r) |> CartesianIndex
 		checkbounds(Bool, result, ix) || continue
 		fit!(result[ix], r)
@@ -117,6 +69,40 @@ function ecdf_evaluate(stat::OnlineStat, data::AbstractVector{<:NamedTuple}, g::
 	end
 	return result
 end
+
+# like Base.AbstractVecOrTuple, but includes heterogeneous tuples
+const AbstractVecOrTuple = Union{AbstractVector, Tuple}
+is_all_leq(datap::Real, query::Real) = datap <= query
+is_all_leq(datap::Real, query::Base.Fix2) = query(datap)
+is_all_leq(datap::AbstractVecOrTuple, query::AbstractVecOrTuple) = (@assert length(datap) == length(query); all(is_all_leq.(datap, query)))
+is_all_leq(datap::NamedTuple{NSD}, query::NamedTuple{NSQ}) where {NSD, NSQ} = is_all_leq(values(datap[NSQ]), values(query))
+
+# is_all_leq(a::T, b::T, ::Below) where {T <: Real} = a <= b
+# is_all_leq(a::T, b::T, ::Above) where {T <: Real} = a >= b
+# is_all_leq(a::T, b::T, orders::Tuple) where {T <: Tuple} = all(is_all_leq.(a, b, orders))
+# is_all_leq(a::T, b::T, orders::AbstractVector) where {T <: AbstractVector} = all(is_all_leq.(a, b, orders))
+# is_all_leq(a::T, b::T, orders::NamedTuple{NS}) where {NS, T <: NamedTuple{NS}} = is_all_leq(values(a), values(b), values(orders))
+
+
+@with_kw struct ECDFAxisSpec{TV, TO}
+    binedges::TV
+    order::TO
+    
+    @assert issorted(binedges)
+end
+
+@inline findbin(a::ECDFAxisSpec, x) = findbin(a.order, a.binedges, x)
+
+@inline findbin(as::Tuple, xs::Union{Tuple, AbstractVector}) = map((ax, x) -> findbin(ax, x), as, xs)
+@inline findbin(as::NamedTuple{NS}, xs::NamedTuple) where {NS} = map((ax, x) -> findbin(ax, x), as, xs[NS]) |> values
+
+@inline findbin(::Union{Below, NoAggBelow}, binedges::AbstractVector, x) = searchsortedfirst(binedges, x)
+@inline findbin(::Union{Above, NoAggAbove}, binedges::AbstractVector, x) = searchsortedlast(binedges, x)
+
+aggregate_axis!(::Union{NoAggBelow, NoAggAbove}, A::AbstractArray, dim::Int) = A
+aggregate_axis!(::Below, A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
+aggregate_axis!(::Below, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
+aggregate_axis!(::Above, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
 
 
 end
