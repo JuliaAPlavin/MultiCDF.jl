@@ -88,7 +88,8 @@ end
 
 @inline findbin(a::ECDFAxisSpec, x) = findbin(a.sign, a.binedges, x)
 
-@inline findbin(as::Tuple, xs::Union{Tuple, AbstractVector}) = map((ax, x) -> findbin(ax, x), as, xs)
+@inline findbin(as::Tuple, xs::Tuple) = map((ax, x) -> findbin(ax, x), as, xs)
+@inline findbin(as::Tuple, xs::AbstractVector) = findbin(as, Tuple(xs))
 @inline findbin(as::NamedTuple{NS}, xs::NamedTuple) where {NS} = map((ax, x) -> findbin(ax, x), as, xs[NS]) |> values
 
 @inline findbin(::typeof(<=), binedges::AbstractVector, x) = searchsortedfirst(binedges, x)
