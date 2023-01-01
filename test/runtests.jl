@@ -110,6 +110,23 @@ end
     @test e7(a=0.5) == m_ecdf((a=0.5, b=Inf)) == 0.6
 end
 
+@testset "ties" begin
+    data = [(a=1.0, b=0.5)]
+    m_ecdf = ecdf(data)
+    @test m_ecdf((a=1,), count) == 1
+    @test m_ecdf((a= <=(1),), count) == 1
+    @test m_ecdf((a= <(1),), count) == 0
+    @test m_ecdf((a= <=(1), b= 0.5), count) == 1
+    @test m_ecdf((a= <=(1), b= <(0.5)), count) == 0
+    @test m_ecdf.(grid(a=[0, 1, 2]), count) == [0, 1, 1]
+    @test m_ecdf.(grid(a=[0, 1, 2], b=[0.5]), count) == [0; 1; 1;;]
+    @test (@set m_ecdf.signs.a = <).(grid(a=[0, 1, 2], b=[0.5]), count) == [0; 0; 1;;]
+    @test (@set m_ecdf.signs.a = <).(grid(a=[0], b=[0.5]), count) == [0;;]
+    @test (@set m_ecdf.signs.a = >).(grid(a=[2], b=[0.5]), count) == [0;;]
+    @test (@set m_ecdf.signs.b = >).(grid(a=[0, 1, 2], b=[0.5]), count) == [0; 0; 0;;]
+    @test (@set m_ecdf.signs.a = >=).(grid(a=[0, 1, 2], b=[0.5]), count) == [1; 1; 0;;]
+end
+
 
 import Aqua
 import CompatHelperLocal as CHL
