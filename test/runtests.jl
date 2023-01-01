@@ -127,6 +127,34 @@ end
     @test (@set m_ecdf.signs.a = >=).(grid(a=[0, 1, 2], b=[0.5]), count) == [1; 1; 0;;]
 end
 
+@testset "inference" begin
+    m_ecdf = @inferred ecdf(NamedTuple{(:a,)}[])
+    @inferred m_ecdf((a=1,))
+    @inferred m_ecdf((a=1,), count)
+    @inferred m_ecdf((a=1,), Counter(NamedTuple))
+
+    m_ecdf = @inferred ecdf(randn(100))
+    bcast(f, args...) = f.(args...)
+    @inferred m_ecdf(0)
+    @inferred m_ecdf(<=(-Inf))
+    @inferred m_ecdf(0, count)
+    @inferred bcast(m_ecdf, -2:0.5:2)
+    
+    m_ecdf = @inferred ecdf(NamedTuple{(:a, :b)}.(tuple.(randn(100), rand(-10:10, 100))); signs=(a= >=, b= <=))
+    @inferred m_ecdf((b=1, a=0))
+    @inferred m_ecdf((b= >=(1),), count)
+    @inferred bcast(m_ecdf, grid(a=-1:0.5:1, b=-1:1:2))
+    @inferred bcast(m_ecdf, grid(a=-1:0.5:1,), count)
+    
+    m_ecdf = @inferred ecdf(NamedTuple{(:a, :b, :c)}.(tuple.(randn(100), rand(-10:10, 100), rand(100))); signs=(a= >=, b= <=))
+    @inferred m_ecdf((b=1, a=0))
+    @inferred m_ecdf((b= >=(1),), count)
+    @inferred bcast(m_ecdf, grid(a=-1:0.5:1, b=-1:1:2))
+    @inferred bcast(m_ecdf, grid(a=-1:0.5:1,))
+    @inferred bcast(m_ecdf, grid(a=-1:0.5:1, b=-1:1:2), count)
+    @inferred bcast(m_ecdf, grid(a=-1:0.5:1,), count)
+end
+
 
 import Aqua
 import CompatHelperLocal as CHL
