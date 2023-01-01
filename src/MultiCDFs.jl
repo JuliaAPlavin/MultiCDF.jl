@@ -14,6 +14,8 @@ end
 
 default_signs(::Type{<:NamedTuple{NS}}) where {NS} = NamedTuple{NS}(ntuple(_ -> <=, length(NS)))
 default_signs(::Type{T}) where {T <: Tuple} = ntuple(_ -> <=, fieldcount(T))
+default_signs(::Type{T}) where {T <: AbstractVector} = ntuple(_ -> <=, length(T))  # length(T) only works for StaticArrays, that's fine
+default_signs(::Type{<:Real}) = <=
 
 ecdf(data; signs=default_signs(eltype(data))) = ECDF(data, signs)
 
