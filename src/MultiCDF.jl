@@ -3,7 +3,6 @@ module MultiCDF
 export ecdf, ecdf_from_pdf, from_unit_cube
 
 using RectiGrids
-using OnlineStatsBase: OnlineStat, fit!, merge, value
 using AxisKeys
 using AxisKeys: hasnames
 
@@ -29,10 +28,6 @@ function (ecdf::ECDF)(x, ::typeof(count))
 	count(y -> is_all_leq(ecdf.signs, y, x), ecdf.data)
 end
 
-function (ecdf::ECDF)(x, stat::OnlineStat)
-	fit!(copy(stat), filter(y -> is_all_leq(ecdf.signs, y, x), ecdf.data))
-end
-
 Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid) = ecdf.(g, count) ./ length(ecdf.data)
 
 function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, ::typeof(count))
@@ -51,24 +46,6 @@ function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, ::typeof(count))
 		aggregate_axis!(ax.sign, counts, dim)
 	end
 	return counts
-end
-
-function Broadcast.broadcasted(ecdf::ECDF, g::RectiGrid, stat::OnlineStat)
-	axkeys = hasnames(g) ? named_axiskeys(g) : axiskeys(g)
-	axspecs = map(axkeys, select_if_possible(ecdf.signs, axkeys)) do ax, sign
-		@assert issorted(ax)
-		ECDFAxisSpec(ax, sign)
-	end
-	result = map(_ -> copy(stat), g)
-	for r in ecdf.data
-		ix = findbin(axspecs, r) |> CartesianIndex
-		checkbounds(Bool, result, ix) || continue
-		fit!(result[ix], r)
-	end
-	for (dim, ax) in enumerate(axspecs)
-		aggregate_axis!(ax.sign, result, dim)
-	end
-	return result
 end
 
 struct ECDF_PDF{TD, TS}
@@ -145,7 +122,7 @@ end
 const LT = Union{typeof(<=), typeof(<)}
 const GT = Union{typeof(>=), typeof(>)}
 aggregate_axis!(::LT, A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims=dim)
-aggregate_axis!(::LT, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)
+aggregate_axis!(::LT, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)  # for OnlineStats
 aggregate_axis!(::GT, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
 
 
