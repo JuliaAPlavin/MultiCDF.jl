@@ -155,6 +155,29 @@ end
     @inferred bcast(m_ecdf, grid(a=-1:0.5:1,), count)
 end
 
+@testset "Makie" begin
+    using Makie
+    using StructArrays
+
+    E = ecdf([1, 1, 1.2, 2])
+    En = ecdf(StructArray(x=[1, 1, 1.2, 2]), signs=(x=(≥),))
+
+    scatterlines(0.5..2.5, E, doaxis=true)
+    scatterlines((@set E.signs = >), markersize=30, color=:red, linewidth=0.5)
+    scatterlines(0..2, En, doaxis=true)
+    scatterlines!(0..2, En)
+
+    data_t2 = Tuple.(eachrow(randn(1000, 2)))
+    data_nt2 = NamedTuple{(:a, :b)}.(data_t2)
+    ecdf_nt = ecdf(data_nt2)
+
+    heatmap(ecdf([(a=1., b=1.), (a=1., b=2.), (a=1.5, b=2.)]))
+    heatmap(0..1.6, 0..4, ecdf([(a=1., b=1.), (a=1., b=2.), (a=1.5, b=2.)]))
+    heatmap(0..2, 0..4, ecdf([(a=1., b=1.), (a=1., b=2.), (a=1.5, b=2.)], signs=(a= >, b= <)))
+    heatmap!(-2..4, -3..3, ecdf_nt, colormap=:turbo)
+    image!(-4..4, -3..4, ecdf_nt, colormap=:turbo)
+end
+
 
 import Aqua
 import CompatHelperLocal as CHL

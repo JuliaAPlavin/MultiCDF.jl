@@ -5,6 +5,7 @@ export ecdf, ecdf_from_pdf, from_unit_cube
 using RectiGrids
 using AxisKeys
 using AxisKeys: hasnames
+using DataPipes, Accessors, StructArrays  # for MakieExt only...
 
 
 default_signs(::Type{<:NamedTuple{NS}}) where {NS} = NamedTuple{NS}(ntuple(_ -> <=, length(NS)))
@@ -125,5 +126,14 @@ aggregate_axis!(::LT, A::AbstractArray{<:Number}, dim::Int) = cumsum!(A, A, dims
 aggregate_axis!(::LT, A::AbstractArray, dim::Int) = accumulate!(merge, A, A, dims=dim)  # for OnlineStats
 aggregate_axis!(::GT, A::AbstractArray, dim::Int) = (reverse!(A, dims=dim); cumsum!(A, A, dims=dim); reverse!(A, dims=dim))
 
+
+# should put somewhere else?
+struct ContiguousIntervals{E,VE<:AbstractVector{E}} <: AbstractVector{Interval{:closed, :open}}
+    edges::VE
+end
+
+Base.size(X::ContiguousIntervals) = (length(X.edges)-1,)
+
+Base.@propagate_inbounds Base.getindex(X::ContiguousIntervals, i::Integer) = Interval{:closed,:open}(X.edges[i], X.edges[i+1])
 
 end
