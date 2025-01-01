@@ -160,8 +160,6 @@ import Aqua
 import CompatHelperLocal as CHL
 @testset begin
     CHL.@check()
+    Aqua.test_all(MultiCDF, ambiguities=false)
     Aqua.test_ambiguities(MultiCDF, recursive=false)
-    Aqua.test_unbound_args(MultiCDF)
-    Aqua.test_undefined_exports(MultiCDF)
-    Aqua.test_stale_deps(MultiCDF)
 end
